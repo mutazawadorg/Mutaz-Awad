@@ -73,7 +73,7 @@ public final class FBLoginButton: FBButton {
       } else {
         nonceValue = nil
         let msg = "Unable to set invalid nonce: \(String(describing: nonce)) on FBLoginButton"
-        Logger.singleShotLogEntry(.developerErrors, logEntry: msg)
+        _Logger.singleShotLogEntry(.developerErrors, logEntry: msg)
       }
     }
   }
@@ -94,8 +94,8 @@ public final class FBLoginButton: FBButton {
 
   var userID: String?
   var userName: String?
-  var elementProvider: _UserInterfaceElementProviding = InternalUtility.shared
-  var stringProvider: _UserInterfaceStringProviding = InternalUtility.shared
+  var elementProvider: UserInterfaceElementProviding = InternalUtility.shared
+  var stringProvider: UserInterfaceStringProviding = InternalUtility.shared
   var loginProvider: LoginProviding = LoginManager()
   var graphRequestFactory: GraphRequestFactoryProtocol = GraphRequestFactory()
 
@@ -142,8 +142,8 @@ public final class FBLoginButton: FBButton {
 
   convenience init(
     frame: CGRect = .zero,
-    elementProvider: _UserInterfaceElementProviding,
-    stringProvider: _UserInterfaceStringProviding,
+    elementProvider: UserInterfaceElementProviding,
+    stringProvider: UserInterfaceStringProviding,
     loginProvider: LoginProviding,
     graphRequestFactory: GraphRequestFactoryProtocol
   ) {

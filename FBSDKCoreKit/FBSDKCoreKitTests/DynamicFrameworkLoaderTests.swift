@@ -15,7 +15,6 @@ import Security
 import Social
 import XCTest
 
-@available(iOS 12.0, *)
 final class DynamicFrameworkLoaderTests: XCTestCase {
 
   #if BUCK
@@ -254,13 +253,6 @@ final class DynamicFrameworkLoaderTests: XCTestCase {
     XCTAssertTrue(
       fbsdkdfl_SFSafariViewControllerClass() is SFSafariViewController.Type,
       "Should dynamically load the SFSafariViewController class"
-    )
-  }
-
-  func testSFAuthenticationSessionClass() {
-    XCTAssertTrue(
-      fbsdkdfl_SFAuthenticationSessionClass() is SFAuthenticationSession.Type,
-      "Should dynamically load the SFAuthenticationSession class"
     )
   }
 

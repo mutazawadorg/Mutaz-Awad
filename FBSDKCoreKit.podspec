@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
 
   s.name         = 'FBSDKCoreKit'
-  s.version      = '14.0.0'
+  s.version      = '14.1.0'
   s.summary      = 'Official Facebook SDK for iOS to access Facebook Platform core features'
 
   s.description  = <<-DESC
@@ -45,12 +45,12 @@ Pod::Spec.new do |s|
   s.author       = 'Facebook'
 
   s.platform     = :ios, :tvos
-  s.ios.deployment_target = '11.0'
-  s.tvos.deployment_target = '11.0'
+  s.ios.deployment_target = '12.0'
+  s.tvos.deployment_target = '12.0'
 
   s.source = {
       http: "https://github.com/facebook/facebook-ios-sdk/releases/download/v#{s.version}/FacebookSDK_Dynamic.xcframework.zip",
-      sha1: 'e75be0f2f6bd7542dfe4edc9fe0707aff2c4282d'
+      sha1: 'c2999cf918ae7e8fa3c69e88bb173763ca316ca1'
   }
   s.vendored_frameworks = 'XCFrameworks/FBSDKCoreKit.xcframework'
   s.dependency 'FBSDKCoreKit_Basics', "#{s.version}"

@@ -58,7 +58,7 @@ public class ShareDialog: NSObject, SharingDialog { // swiftlint:disable:this pr
    */
   public var shouldFailOnDataError = false
 
-  var webDialog: WebDialog?
+  var webDialog: _WebDialog?
   private var temporaryFiles = [URL]()
 
   /**
@@ -145,7 +145,7 @@ extension ShareDialog: DependentAsType {
     settings: Settings.shared,
     shareUtility: _ShareUtility.self,
     bridgeAPIRequestFactory: ShareBridgeAPIRequestFactory(),
-    bridgeAPIRequestOpener: BridgeAPI.shared,
+    bridgeAPIRequestOpener: _BridgeAPI.shared,
     socialComposeViewControllerFactory: SocialComposeViewControllerFactory(),
     windowFinder: InternalUtility.shared,
     errorFactory: ErrorFactory(),
@@ -535,13 +535,13 @@ extension ShareDialog {
     }
 
     let parameters = dependencies.shareUtility.feedShareDictionary(for: content)
-    webDialog = WebDialog.createAndShow(
+
+    webDialog = _WebDialog(
       name: Self.feedMethodName,
-      parameters: parameters,
-      frame: .zero,
-      delegate: self,
-      windowFinder: dependencies.windowFinder
+      parameters: parameters as? [String: String]
     )
+    webDialog?.delegate = self
+    webDialog?.show()
   }
 
   private func showNative() throws {
@@ -691,13 +691,12 @@ extension ShareDialog {
 
     let components = dependencies.shareUtility.buildWebShareBridgeComponents(for: content)
 
-    webDialog = WebDialog.createAndShow(
+    webDialog = _WebDialog(
       name: components.methodName,
-      parameters: components.parameters,
-      frame: .zero,
-      delegate: self,
-      windowFinder: dependencies.windowFinder
+      parameters: components.parameters as? [String: String]
     )
+    webDialog?.delegate = self
+    webDialog?.show()
   }
 
   private var shouldUseNativeDialog: Bool {
@@ -705,7 +704,7 @@ extension ShareDialog {
       return true
     } else {
       return ShareDialogConfiguration()
-        .shouldUseNativeDialog(forDialogName: FBSDKDialogConfigurationNameShare)
+        .shouldUseNativeDialog(forDialogName: DialogConfigurationName.share)
     }
   }
 
@@ -714,7 +713,7 @@ extension ShareDialog {
       return false
     } else {
       return ShareDialogConfiguration()
-        .shouldUseSafariViewController(forDialogName: FBSDKDialogConfigurationNameShare)
+        .shouldUseSafariViewController(forDialogName: DialogConfigurationName.share)
     }
   }
 
@@ -838,19 +837,13 @@ extension ShareDialog {
     }
 
     if flags.containsVideos {
-      guard AccessToken.current != nil else {
-        throw dependencies.errorFactory.invalidArgumentError(
-          domain: ShareErrorDomain,
-          name: "shareContent",
-          value: content,
-          message: "The web share dialog needs a valid access token to stage videos.",
-          underlyingError: nil
-        )
-      }
-
-      if let video = content as? ShareVideoContent {
-        try video.validate(options: bridgeOptions)
-      }
+      throw dependencies.errorFactory.invalidArgumentError(
+        domain: ShareErrorDomain,
+        name: "shareContent",
+        value: content,
+        message: "video sharing through the browser is not supported.",
+        underlyingError: nil
+      )
     }
 
     if flags.containsMedia,
@@ -1116,7 +1109,7 @@ extension ShareDialog {
 
 extension ShareDialog: WebDialogDelegate {
   public func webDialog(
-    _ webDialog: WebDialog,
+    _ webDialog: _WebDialog,
     didCompleteWithResults results: [String: Any]
   ) {
     guard
@@ -1146,7 +1139,7 @@ extension ShareDialog: WebDialogDelegate {
     dependencies.internalUtility.unregisterTransientObject(self)
   }
 
-  public func webDialog(_ webDialog: WebDialog, didFailWithError error: Error) {
+  public func webDialog(_ webDialog: _WebDialog, didFailWithError error: Error) {
     guard self.webDialog === webDialog else { return }
 
     self.webDialog = nil
@@ -1155,7 +1148,7 @@ extension ShareDialog: WebDialogDelegate {
     Self.internalUtility?.unregisterTransientObject(self)
   }
 
-  public func webDialogDidCancel(_ webDialog: WebDialog) {
+  public func webDialogDidCancel(_ webDialog: _WebDialog) {
     guard self.webDialog === webDialog else { return }
 
     self.webDialog = nil

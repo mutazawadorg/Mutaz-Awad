@@ -36,8 +36,8 @@ public final class LoginManager: NSObject {
 
   private weak var fromViewController: UIViewController?
   var requestedPermissions: Set<FBPermission>?
-  var logger: _LoginManagerLogger?
-  var state = _LoginManagerState.idle
+  var logger: LoginManagerLogger?
+  var state = LoginManagerState.idle
   var usedSafariSession = false
 
   var isPerformingLogin: Bool {
@@ -76,7 +76,7 @@ public final class LoginManager: NSObject {
     }
 
     let keychainStore = keychainStoreFactory.createKeychainStore(
-      withService: "com.facebook.sdk.loginmanager.\(bundleIdentifier)",
+      service: "com.facebook.sdk.loginmanager.\(bundleIdentifier)",
       accessGroup: nil
     )
 
@@ -87,10 +87,10 @@ public final class LoginManager: NSObject {
       graphRequestFactory: GraphRequestFactory(),
       internalUtility: InternalUtility.shared,
       keychainStore: keychainStore,
-      loginCompleterFactory: _LoginCompleterFactory(),
+      loginCompleterFactory: LoginCompleterFactory(),
       profileProvider: Profile.self,
       settings: Settings.shared,
-      urlOpener: BridgeAPI.shared
+      urlOpener: _BridgeAPI.shared
     )
   }()
 
@@ -179,8 +179,9 @@ public final class LoginManager: NSObject {
         Cannot login without a valid login configuration. Please make sure the `LoginConfiguration` provided is non-nil.
         """
 
-      Logger.singleShotLogEntry(.developerErrors, logEntry: failureMessage)
+      _Logger.singleShotLogEntry(.developerErrors, logEntry: failureMessage)
 
+      // swiftformat:disable:next redundantSelf
       let error = self.errorFactory?.error(
         code: CoreError.errorInvalidArgument.rawValue,
         message: failureMessage,
@@ -262,7 +263,7 @@ public final class LoginManager: NSObject {
   private func logIn(permissions: Set<FBPermission>, handler: LoginManagerLoginResultBlock?) {
     if let configuration = configuration {
       let provider = ServerConfigurationProvider()
-      logger = _LoginManagerLogger(loggingToken: provider.loggingToken, tracking: configuration.tracking)
+      logger = LoginManagerLogger(loggingToken: provider.loggingToken, tracking: configuration.tracking)
     }
 
     self.handler = handler.flatMap(IdentifiedLoginResultHandler.init)
@@ -325,7 +326,7 @@ public final class LoginManager: NSObject {
         underlyingError: nil
       )
 
-      Logger.singleShotLogEntry(.developerErrors, logEntry: message)
+      _Logger.singleShotLogEntry(.developerErrors, logEntry: message)
       return handler(nil, error)
     }
 
@@ -376,7 +377,7 @@ public final class LoginManager: NSObject {
     switch state {
     case .start:
       if usedSafariSession {
-        // Using SFAuthenticationSession makes an interstitial dialog that blocks the app, but in certain situations
+        // Using safari makes an interstitial dialog that blocks the app, but in certain situations
         // such as screen lock it can be dismissed and have the control returned to the app without invoking the
         // completionHandler. In this case, the view controller has the control back and tried to reinvoke the login.
         // This is acceptable behavior and we should pop up the dialog again
@@ -387,7 +388,7 @@ public final class LoginManager: NSObject {
           behavior. You should wait until the previous login handler gets called to start a new login.
           """
 
-        Logger.singleShotLogEntry(.developerErrors, logEntry: message)
+        _Logger.singleShotLogEntry(.developerErrors, logEntry: message)
         return false
       }
 
@@ -422,6 +423,7 @@ public final class LoginManager: NSObject {
         result = getSuccessResult(from: parameters)
 
         if result?.token != nil,
+           // swiftformat:disable:next redundantSelf
            let accessToken = self.accessTokenWallet?.current {
           // In a reauthentication, short circuit and let the login handler be called when the validation finishes.
           return validateReauthentication(accessToken: accessToken, loginResult: result)
@@ -467,7 +469,7 @@ public final class LoginManager: NSObject {
     result: LoginManagerLoginResult? = nil,
     error: Error? = nil
   ) {
-    logger?.endLogin(with: result, error: error as NSError?)
+    logger?.endLogin(result: result, error: error as NSError?)
     logger?.endSession()
     logger?.postLoginHeartbeat()
     logger = nil
@@ -482,11 +484,11 @@ public final class LoginManager: NSObject {
       handler = nil
     } else {
       let message = """
-          ** WARNING: You are requesting permissions inside the completion block of an existing login. \
-          This is unsupported behavior. You should request additional permissions only when they are needed, such as \
-          requesting for publish_actions when the user performs a sharing action.
-          """
-      Logger.singleShotLogEntry(.developerErrors, logEntry: message)
+        ** WARNING: You are requesting permissions inside the completion block of an existing login. \
+        This is unsupported behavior. You should request additional permissions only when they are needed, such as \
+        requesting for publish_actions when the user performs a sharing action.
+        """
+      _Logger.singleShotLogEntry(.developerErrors, logEntry: message)
     }
   }
 
@@ -525,7 +527,7 @@ public final class LoginManager: NSObject {
       "cbt": String(cbtInMilliseconds),
       "ies": NSNumber(value: dependencies.settings.isAutoLogAppEventsEnabled).stringValue,
       "local_client_id": dependencies.settings.appURLSchemeSuffix,
-      "default_audience": _LoginUtility.string(forAudience: defaultAudience),
+      "default_audience": LoginUtility.stringForAudience(defaultAudience),
     ]
     var parameters = nullableParameters.compactMapValues { $0 }
 
@@ -550,9 +552,9 @@ public final class LoginManager: NSObject {
     let expectedChallenge = getStringForChallenge()
     let encodedChallenge = expectedChallenge.flatMap(Utility.encode(urlString:))
     let state: [String: Any] = ["challenge": encodedChallenge ?? NSNull()]
-    if let clientState = _LoginManagerLogger.clientStateFor(
-      authMethod: authenticationMethod,
-      andExistingState: state,
+    if let clientState = LoginManagerLogger.getClientState(
+      authenticationMethod: authenticationMethod,
+      existingState: state,
       logger: logger
     ) {
       parameters["state"] = clientState
@@ -623,15 +625,18 @@ public final class LoginManager: NSObject {
   private func performBrowserLogIn(handler browserLoginHandler: BrowserLoginSuccessBlock?) {
     guard let dependencies = try? getDependencies() else { return }
 
+    // swiftformat:disable:next redundantSelf
     let urlScheme = "fb\(self.settings?.appID ?? "")\(self.settings?.appURLSchemeSuffix ?? "")"
-    logger?.willAttemptAppSwitchingBehaviorWith(urlScheme: urlScheme)
+    logger?.willAttemptAppSwitchingBehavior(urlScheme: urlScheme)
     let serverConfigurationProvider = ServerConfigurationProvider()
-    let shouldUseSafariViewController = serverConfigurationProvider.useSafariViewController(forDialogName: "login")
+    let shouldUseSafariViewController = serverConfigurationProvider.shouldUseSafariViewController(
+      forDialogName: "login"
+    )
     let authenticationMethod = shouldUseSafariViewController
       ? LoggerAuthenticationMethod.safariViewController
       : LoggerAuthenticationMethod.browser
 
-    logger?.startWith(authMethod: authenticationMethod)
+    logger?.start(authenticationMethod: authenticationMethod)
 
     var potentialError: Error?
     var authenticationURL: URL?
@@ -682,6 +687,7 @@ public final class LoginManager: NSObject {
 
   private func getCancelledResult(from parameters: _LoginCompletionParameters) -> LoginManagerLoginResult {
     var declinedPermissions = Set<String>()
+    // swiftformat:disable:next redundantSelf
     if self.accessTokenWallet?.current != nil {
       // Always include the list of declined permissions from this login request
       // if an access token is already cached by the SDK
@@ -743,6 +749,7 @@ public final class LoginManager: NSObject {
 
   func getRecentlyGrantedPermissions(from grantedPermissions: Set<FBPermission>) -> Set<FBPermission> {
     guard
+      // swiftformat:disable:next redundantSelf
       let previous = self.accessTokenWallet?.current?.permissions,
       !previous.isEmpty,
       let requested = requestedPermissions,
@@ -763,6 +770,7 @@ public final class LoginManager: NSObject {
   // MARK: - Keychain Storage
 
   private func storeExpectedChallenge(_ challenge: String?) {
+    // swiftformat:disable:next redundantSelf
     guard let keychainStore = self.keychainStore else { return }
 
     let accessibility = DynamicFrameworkLoaderProxy
@@ -777,6 +785,7 @@ public final class LoginManager: NSObject {
   }
 
   private func loadExpectedChallenge() -> String? {
+    // swiftformat:disable:next redundantSelf
     self.keychainStore?.string(forKey: Keys.expectedChallenge)
   }
 
@@ -785,6 +794,7 @@ public final class LoginManager: NSObject {
       .loadkSecAttrAccessibleAfterFirstUnlockThisDeviceOnly()
       .takeRetainedValue()
 
+    // swiftformat:disable:next redundantSelf
     self.keychainStore?.setString(
       nonce,
       forKey: Keys.expectedNonce,
@@ -793,6 +803,7 @@ public final class LoginManager: NSObject {
   }
 
   private func loadExpectedNonce() -> String? {
+    // swiftformat:disable:next redundantSelf
     self.keychainStore?.string(forKey: Keys.expectedNonce)
   }
 
@@ -801,6 +812,7 @@ public final class LoginManager: NSObject {
       .loadkSecAttrAccessibleAfterFirstUnlockThisDeviceOnly()
       .takeRetainedValue()
 
+    // swiftformat:disable:next redundantSelf
     self.keychainStore?.setString(
       codeVerifier?.value,
       forKey: Keys.expectedCodeVerifier,
@@ -809,6 +821,7 @@ public final class LoginManager: NSObject {
   }
 
   private func loadExpectedCodeVerifier() -> String? {
+    // swiftformat:disable:next redundantSelf
     self.keychainStore?.string(forKey: Keys.expectedCodeVerifier)
   }
 }
@@ -839,7 +852,7 @@ extension LoginManager: URLOpening {
       let dependencies = try? getDependencies()
     else { return false }
 
-    let urlParameters = _LoginUtility.queryParams(fromLoginURL: url) ?? [:]
+    let urlParameters = LoginUtility.getQueryParameters(from: url) ?? [:]
     let completer = dependencies.loginCompleterFactory.createLoginCompleter(
       urlParameters: urlParameters,
       appID: dependencies.settings.appID ?? ""
@@ -852,7 +865,7 @@ extension LoginManager: URLOpening {
     ) { [self] parameters in
       if let configuration = configuration,
          logger == nil {
-        logger = _LoginManagerLogger(
+        logger = LoginManagerLogger(
           parameters: urlParameters,
           tracking: configuration.tracking
         )
@@ -879,6 +892,7 @@ extension LoginManager: URLOpening {
       let host = url.host
     else { return false }
 
+    // swiftformat:disable:next redundantSelf
     return scheme.hasPrefix("fb\(self.settings?.appID ?? "")")
       && host == "authorize"
   }
@@ -899,6 +913,7 @@ extension LoginManager: URLOpening {
       let host = url.host
     else { return false }
 
+    // swiftformat:disable:next redundantSelf
     return scheme.hasPrefix("fb\(self.settings?.appID ?? "")")
       && host == "no-op"
   }
@@ -908,8 +923,8 @@ extension LoginManager: LoginProviding {}
 
 extension LoginManager: DependentAsInstance {
   struct InstanceDependencies {
-    var accessTokenWallet: AccessTokenProviding.Type
-    var authenticationTokenWallet: AuthenticationTokenProviding.Type
+    var accessTokenWallet: _AccessTokenProviding.Type
+    var authenticationTokenWallet: _AuthenticationTokenProviding.Type
     var errorFactory: ErrorCreating
     var graphRequestFactory: GraphRequestFactoryProtocol
     var internalUtility: URLHosting & AppURLSchemeProviding & AppAvailabilityChecker

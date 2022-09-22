@@ -12,12 +12,12 @@
 
 #import <FBSDKCoreKit/FBSDKSettingsProtocol.h>
 #import <FBSDKCoreKit_Basics/FBSDKCoreKit_Basics.h>
+#import <FBSDKCoreKit/_FBSDKNotificationPosting.h>
 
 #import "FBSDKAccessToken.h"
 #import "FBSDKGraphRequestConnecting.h"
 #import "FBSDKLocation.h"
 #import "FBSDKMath.h"
-#import "FBSDKNotificationProtocols.h"
 #import "FBSDKProfileCodingKey.h"
 #import "FBSDKURLHosting.h"
 #import "FBSDKUnarchiverProvider.h"
@@ -44,7 +44,7 @@ static NSDateFormatter *_dateFormatter;
 @implementation FBSDKProfile
 
 static Class<FBSDKAccessTokenProviding> _accessTokenProvider = nil;
-static id<FBSDKNotificationPosting, FBSDKNotificationObserving> _notificationCenter = nil;
+static id<_FBSDKNotificationPosting, FBSDKNotificationDelivering> _notificationCenter = nil;
 static id<FBSDKDataPersisting> _dataStore;
 static id<FBSDKSettings> _settings;
 static id<FBSDKURLHosting> _urlHoster;
@@ -79,12 +79,12 @@ static id<FBSDKURLHosting> _urlHoster;
   _settings = settings;
 }
 
-+ (nullable id<FBSDKNotificationPosting, FBSDKNotificationObserving>)notificationCenter
++ (nullable id<_FBSDKNotificationPosting, FBSDKNotificationDelivering>)notificationCenter
 {
   return _notificationCenter;
 }
 
-+ (void)setNotificationCenter:(nullable id<FBSDKNotificationPosting, FBSDKNotificationObserving>)notificationCenter
++ (void)setNotificationCenter:(nullable id<_FBSDKNotificationPosting, FBSDKNotificationDelivering>)notificationCenter
 {
   _notificationCenter = notificationCenter;
 }
@@ -341,9 +341,9 @@ static id<FBSDKURLHosting> _urlHoster;
     g_currentProfile = profile;
 
     if (shouldPostNotification) {
-      [self.notificationCenter postNotificationName:FBSDKProfileDidChangeNotification
-                                             object:self.class
-                                           userInfo:userInfo];
+      [self.notificationCenter fb_postNotificationName:FBSDKProfileDidChangeNotification
+                                                object:self.class
+                                              userInfo:userInfo];
     }
   }
 }
@@ -356,12 +356,12 @@ static id<FBSDKURLHosting> _urlHoster;
 + (void)enableUpdatesOnAccessTokenChange:(BOOL)enable
 {
   if (enable) {
-    [self.notificationCenter addObserver:self
-                                selector:@selector(observeChangeAccessTokenChange:)
-                                    name:FBSDKAccessTokenDidChangeNotification
-                                  object:nil];
+    [self.notificationCenter fb_addObserver:self
+                                   selector:@selector(observeChangeAccessTokenChange:)
+                                       name:FBSDKAccessTokenDidChangeNotification
+                                     object:nil];
   } else {
-    [self.notificationCenter removeObserver:self];
+    [self.notificationCenter fb_removeObserver:self];
   }
 }
 
@@ -505,7 +505,7 @@ static id<FBSDKURLHosting> _urlHoster;
 
 + (void)configureWithDataStore:(id<FBSDKDataPersisting>)dataStore
            accessTokenProvider:(Class<FBSDKAccessTokenProviding>)accessTokenProvider
-            notificationCenter:(id<FBSDKNotificationPosting, FBSDKNotificationObserving>)notificationCenter
+            notificationCenter:(id<_FBSDKNotificationPosting, FBSDKNotificationDelivering>)notificationCenter
                       settings:(id<FBSDKSettings>)settings
                      urlHoster:(id<FBSDKURLHosting>)urlHoster
 {
@@ -518,21 +518,19 @@ static id<FBSDKURLHosting> _urlHoster;
   }
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 + (void)cacheProfile:(FBSDKProfile *)profile
 {
   if (profile) {
-    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:profile];
-    [self.dataStore setObject:data forKey:FBSDKProfileUserDefaultsKey];
+    NSData *data = [NSKeyedArchiver archivedDataWithRootObject:profile requiringSecureCoding:NO error:nil];
+    [self.dataStore fb_setObject:data forKey:FBSDKProfileUserDefaultsKey];
   } else {
-    [self.dataStore removeObjectForKey:FBSDKProfileUserDefaultsKey];
+    [self.dataStore fb_removeObjectForKey:FBSDKProfileUserDefaultsKey];
   }
 }
 
 + (nullable FBSDKProfile *)fetchCachedProfile
 {
-  NSData *data = [self.dataStore objectForKey:FBSDKProfileUserDefaultsKey];
+  NSData *data = [self.dataStore fb_objectForKey:FBSDKProfileUserDefaultsKey];
   if (data != nil) {
     id<FBSDKObjectDecoding> unarchiver = [FBSDKUnarchiverProvider createSecureUnarchiverFor:data];
 
@@ -754,8 +752,6 @@ static id<FBSDKURLHosting> _urlHoster;
   }
   return _dateFormatter;
 }
-
-#pragma clang diagnostic pop
 
 #if DEBUG
 

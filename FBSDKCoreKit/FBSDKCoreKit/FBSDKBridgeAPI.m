@@ -14,6 +14,7 @@
 
 #import <AuthenticationServices/AuthenticationServices.h>
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKCoreKit/FBSDKCoreKit-Swift.h>
 
 #import "FBSDKApplicationLifecycleNotifications.h"
 #import "FBSDKBridgeAPIResponseCreating.h"
@@ -24,12 +25,9 @@
 #import "FBSDKErrorReporter.h"
 #import "FBSDKInternalUtility+Internal.h"
 #import "FBSDKLogger+Internal.h"
-#import "FBSDKOperatingSystemVersionComparing.h"
 #import "FBSDKURLScheme.h"
-#import "NSProcessInfo+Protocols.h"
-#import "UIApplication+URLOpener.h"
 
-/// Specifies state of FBSDKAuthenticationSession (SFAuthenticationSession (iOS 11) and ASWebAuthenticationSession (iOS 12+))
+/// Specifies state of FBSDKAuthenticationSession
 typedef NS_ENUM(NSUInteger, FBSDKAuthenticationSession) {
   /// There is no active authentication session
   FBSDKAuthenticationSessionNone,
@@ -64,8 +62,8 @@ typedef NS_ENUM(NSUInteger, FBSDKAuthenticationSession) {
 @property (nonatomic) NSObject<FBSDKBridgeAPIRequest> *pendingRequest;
 @property (nonatomic) FBSDKBridgeAPIResponseBlock pendingRequestCompletionBlock;
 @property (nonatomic) id<FBSDKURLOpening> pendingURLOpen;
-@property (nonatomic) id<FBSDKAuthenticationSession> authenticationSession NS_AVAILABLE_IOS(11_0);
-@property (nonatomic) FBSDKAuthenticationCompletionHandler authenticationSessionCompletionHandler NS_AVAILABLE_IOS(11_0);
+@property (nonatomic) id<FBSDKAuthenticationSession> authenticationSession;
+@property (nonatomic) FBSDKAuthenticationCompletionHandler authenticationSessionCompletionHandler;
 @property (nonatomic) FBSDKAuthenticationSession authenticationSessionState;
 @property (nonatomic) BOOL expectingBackground;
 @property (nullable, nonatomic) SFSafariViewController *safariViewController;
@@ -85,7 +83,7 @@ typedef NS_ENUM(NSUInteger, FBSDKAuthenticationSession) {
     FBSDKErrorFactory *errorFactory = [[FBSDKErrorFactory alloc] initWithReporter:FBSDKErrorReporter.shared];
     _sharedInstance = [[self alloc] initWithProcessInfo:NSProcessInfo.processInfo
                                                  logger:[[FBSDKLogger alloc] initWithLoggingBehavior:FBSDKLoggingBehaviorDeveloperErrors]
-                                              urlOpener:UIApplication.sharedApplication
+                                              urlOpener:CoreUIApplication.shared
                                bridgeAPIResponseFactory:[FBSDKBridgeAPIResponseFactory new]
                                         frameworkLoader:FBSDKDynamicFrameworkLoader.shared
                                    appURLSchemeProvider:FBSDKInternalUtility.sharedUtility
@@ -127,13 +125,7 @@ typedef NS_ENUM(NSUInteger, FBSDKAuthenticationSession) {
   } else if (_authenticationSession && _authenticationSessionState == FBSDKAuthenticationSessionCanceledBySystem) {
     [_authenticationSession cancel];
     _authenticationSession = nil;
-    NSString *errorDomain;
-    if (@available(iOS 12.0, *)) {
-      errorDomain = @"com.apple.AuthenticationServices.WebAuthenticationSession";
-    } else {
-      errorDomain = @"com.apple.SafariServices.Authentication";
-    }
-
+    NSString *errorDomain = @"com.apple.AuthenticationServices.WebAuthenticationSession";
     NSError *error = [self.errorFactory errorWithDomain:errorDomain
                                                    code:1
                                                userInfo:nil
@@ -285,7 +277,7 @@ typedef NS_ENUM(NSUInteger, FBSDKAuthenticationSession) {
   dispatch_block_t block = ^{
     // Dispatch openURL calls to prevent hangs if we're inside the current app delegate's openURL flow already
     NSOperatingSystemVersion iOS10Version = { .majorVersion = 10, .minorVersion = 0, .patchVersion = 0 };
-    if ([weakProcessInfo isOperatingSystemAtLeastVersion:iOS10Version]) {
+    if ([weakProcessInfo fb_isOperatingSystemAtLeastVersion:iOS10Version]) {
       if (self.urlOpener) {
         [self.urlOpener openURL:url options:@{} completionHandler:^(BOOL success) {
           handler(success, nil);
@@ -435,13 +427,9 @@ typedef NS_ENUM(NSUInteger, FBSDKAuthenticationSession) {
 {
   Class AuthenticationSessionClass = fbsdkdfl_ASWebAuthenticationSessionClass();
 
-  if (!AuthenticationSessionClass) {
-    AuthenticationSessionClass = fbsdkdfl_SFAuthenticationSessionClass();
-  }
-
   if (AuthenticationSessionClass != nil) {
     if (_authenticationSession != nil) {
-      [self.logger logEntry:@"There is already a request for authenticated session. Cancelling active SFAuthenticationSession before starting the new one."];
+      [self.logger logEntry:@"There is already a request for authenticated session. Cancelling active authentication session before starting the new one."];
       [_authenticationSession cancel];
     }
     _authenticationSession = [[AuthenticationSessionClass alloc] initWithURL:url

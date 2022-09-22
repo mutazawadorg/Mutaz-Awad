@@ -13,12 +13,10 @@
 #import "FBSDKBridgeAPI.h"
 #import "FBSDKBridgeAPIResponseCreating.h"
 #import "FBSDKDynamicFrameworkResolving.h"
-#import "FBSDKInternalURLOpener.h"
-#import "FBSDKOperatingSystemVersionComparing.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface FBSDKBridgeAPI (Internal) <FBSDKApplicationObserving>
+@interface FBSDKBridgeAPI (Internal)
 
 @property (nonatomic, readonly) FBSDKAuthenticationCompletionHandler sessionCompletionHandler;
 

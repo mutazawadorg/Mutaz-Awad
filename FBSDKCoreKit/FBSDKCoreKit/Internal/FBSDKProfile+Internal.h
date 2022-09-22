@@ -8,15 +8,15 @@
 
 #if !TARGET_OS_TV
 
-#import <FBSDKCoreKit/FBSDKAccessTokenProtocols.h>
+#import <FBSDKCoreKit/FBSDKAccessTokenProviding.h>
 #import <FBSDKCoreKit/FBSDKGraphRequest.h>
 #import <FBSDKCoreKit/FBSDKProfile.h>
 #import <FBSDKCoreKit_Basics/FBSDKCoreKit_Basics.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-@protocol FBSDKNotificationPosting;
-@protocol FBSDKNotificationObserving;
+@protocol _FBSDKNotificationPosting;
+@protocol FBSDKNotificationDelivering;
 @protocol FBSDKSettings;
 @protocol FBSDKURLHosting;
 
@@ -27,10 +27,6 @@ typedef void (^FBSDKParseProfileBlock)(id result, FBSDKProfile *_Nonnull *_Nulla
 + (void)cacheProfile:(nullable FBSDKProfile *)profile;
 + (nullable FBSDKProfile *)fetchCachedProfile NS_SWIFT_NAME(fetchCachedProfile());
 
-+ (NSURL *)imageURLForProfileID:(NSString *)profileId
-                    pictureMode:(FBSDKProfilePictureMode)mode
-                           size:(CGSize)size;
-
 + (void)loadProfileWithToken:(FBSDKAccessToken *)token
                 graphRequest:(id<FBSDKGraphRequest>)request
                   completion:(FBSDKProfileBlock)completion
@@ -39,15 +35,6 @@ typedef void (^FBSDKParseProfileBlock)(id result, FBSDKProfile *_Nonnull *_Nulla
 + (void)loadProfileWithToken:(FBSDKAccessToken *)token completion:(_Nullable FBSDKProfileBlock)completion;
 
 + (void)observeChangeAccessTokenChange:(NSNotification *)notification;
-
-// UNCRUSTIFY_FORMAT_OFF
-+ (void)configureWithDataStore:(id<FBSDKDataPersisting>)dataStore
-           accessTokenProvider:(Class<FBSDKAccessTokenProviding>)accessTokenProvider
-            notificationCenter:(id<FBSDKNotificationPosting, FBSDKNotificationObserving>)notificationCenter
-                      settings:(id<FBSDKSettings>)settings
-                     urlHoster:(id<FBSDKURLHosting>)urlHoster
-NS_SWIFT_NAME(configure(dataStore:accessTokenProvider:notificationCenter:settings:urlHoster:));
-// UNCRUSTIFY_FORMAT_ON
 
 @end
 

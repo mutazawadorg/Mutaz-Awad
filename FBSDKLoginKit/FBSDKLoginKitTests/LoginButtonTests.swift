@@ -61,13 +61,13 @@ final class LoginButtonTests: XCTestCase {
   func testDefaultDependencies() {
     let loginButton = FBLoginButton()
     XCTAssertIdentical(
-      loginButton.elementProvider,
+      loginButton.elementProvider as AnyObject,
       InternalUtility.shared,
       .hasDefaultElementProvider
     )
 
     XCTAssertIdentical(
-      loginButton.stringProvider,
+      loginButton.stringProvider as AnyObject,
       InternalUtility.shared,
       .hasDefaultStringProvider
     )
@@ -85,13 +85,13 @@ final class LoginButtonTests: XCTestCase {
 
   func testCustomDependencies() {
     XCTAssertIdentical(
-      loginButton.elementProvider,
+      loginButton.elementProvider as AnyObject,
       elementProvider,
       .hasCustomElementProvider
     )
 
     XCTAssertIdentical(
-      loginButton.stringProvider,
+      loginButton.stringProvider as AnyObject,
       stringProvider,
       .hasCustomStringProvider
     )
@@ -893,7 +893,7 @@ final class LoginButtonTests: XCTestCase {
     XCTAssertNotNil(loginProvider.capturedConfiguration)
     let completion = try XCTUnwrap(loginProvider.capturedCompletion)
     let granted = Set(SampleAccessTokens.validToken.permissions.map(\.name))
-    let declined = Set(SampleAccessTokens.validToken.declinedPermissions.map(\.name ))
+    let declined = Set(SampleAccessTokens.validToken.declinedPermissions.map(\.name))
     let result = LoginManagerLoginResult(
       token: SampleAccessTokens.validToken,
       authenticationToken: nil,
@@ -1026,6 +1026,8 @@ final class LoginButtonTests: XCTestCase {
     XCTAssertEqual(result1?.declinedPermissions, result2?.declinedPermissions, message, file: file, line: line)
   }
 }
+
+// swiftformat:disable extensionaccesscontrol
 
 // MARK: - Assumptions
 

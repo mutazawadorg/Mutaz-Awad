@@ -10,10 +10,11 @@
 
 #import "FBSDKAppLinkNavigation+Internal.h"
 
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKCoreKit/FBSDKCoreKit-Swift.h>
 #import <FBSDKCoreKit_Basics/FBSDKCoreKit_Basics.h>
 
 #import "FBSDKAppLink+Internal.h"
-#import "FBSDKAppLinkEventPosting.h"
 #import "FBSDKMeasurementEventNames.h"
 #import "FBSDKWebViewAppLinkResolver.h"
 
@@ -179,8 +180,6 @@ static id<FBSDKAppLinkResolving> _appLinkResolver;
                                         eventPoster:(id<FBSDKAppLinkEventPosting>)eventPoster
                                               error:(NSError *__autoreleasing *)error
 {
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   NSURL *openedURL = nil;
   NSError *encodingError = nil;
   FBSDKAppLinkNavigationType retType = FBSDKAppLinkNavigationTypeFailure;
@@ -213,7 +212,6 @@ static id<FBSDKAppLinkResolving> _appLinkResolver;
       openedURL = appLinkBrowserURL;
     }
   }
-  #pragma clang diagnostic pop
 
   [self postAppLinkNavigateEventNotificationWithTargetURL:openedURL
                                                     error:error ? *error : nil
@@ -349,7 +347,11 @@ static id<FBSDKAppLinkResolving> _appLinkResolver;
 
 + (FBSDKAppLinkNavigationType)navigationTypeForLink:(FBSDKAppLink *)link
 {
-  return [[self navigationWithAppLink:link extras:@{} appLinkData:@{} settings:self.settings] navigationType];
+  FBSDKAppLinkNavigation *instance = [self navigationWithAppLink:link
+                                                          extras:@{}
+                                                     appLinkData:@{}
+                                                        settings:self.settings];
+  return instance.navigationType;
 }
 
 - (FBSDKAppLinkNavigationType)navigationType

@@ -92,7 +92,7 @@ final class MessageDialogTests: XCTestCase {
     )
     XCTAssertIdentical(
       dependencies.bridgeAPIRequestOpener,
-      BridgeAPI.shared,
+      _BridgeAPI.shared,
       .defaultDependency("the shared BridgeAPI", for: "bridge API request opening")
     )
     XCTAssertTrue(
@@ -409,6 +409,8 @@ final class MessageDialogTests: XCTestCase {
     XCTAssertEqual(delegate.sharerDidCompleteResults as? [String: String], results, .successIsHandled)
   }
 }
+
+// swiftformat:disable extensionaccesscontrol
 
 // MARK: - Assumptions
 

@@ -14,7 +14,6 @@
 #import "FBSDKAccessToken.h"
 #import "FBSDKAuthenticationToken.h"
 #import "FBSDKCoreKitVersions.h"
-#import "FBSDKErrorConfigurationProvider.h"
 #import "FBSDKErrorRecoveryAttempter.h"
 #import "FBSDKGraphRequest+Internal.h"
 #import "FBSDKGraphRequestBody.h"
@@ -22,7 +21,6 @@
 #import "FBSDKGraphRequestDataAttachment.h"
 #import "FBSDKInternalUtility+Internal.h"
 #import "FBSDKLogger+Internal.h"
-#import "FBSDKOperatingSystemVersionComparing.h"
 #import "FBSDKSafeCast.h"
 #import "FBSDKSettingsProtocol.h"
 #import "FBSDKURLSessionProxying.h"
@@ -1304,7 +1302,7 @@ static Class<FBSDKAuthenticationTokenProviding> _authenticationTokenProvider;
     agentWithSuffix = [NSString stringWithFormat:@"%@/%@", agent, self.class.settings.userAgentSuffix];
   }
   if (@available(iOS 13.0, *)) {
-    if (self.class.macCatalystDeterminator.isMacCatalystApp) {
+    if (self.class.macCatalystDeterminator.fb_isMacCatalystApp) {
       return [NSString stringWithFormat:@"%@/%@", agentWithSuffix ?: agent, @"macOS"];
     }
   }

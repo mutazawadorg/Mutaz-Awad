@@ -172,7 +172,7 @@ public class MessageDialog: NSObject, SharingDialog { // swiftlint:disable:this 
     else { return false }
 
     let shouldUseSafariViewController = shareDialogConfiguration
-      .shouldUseSafariViewController(forDialogName: FBSDKDialogConfigurationNameMessage)
+      .shouldUseSafariViewController(forDialogName: DialogConfigurationName.message)
 
     dependencies.bridgeAPIRequestOpener.open(
       request,
@@ -231,7 +231,7 @@ public class MessageDialog: NSObject, SharingDialog { // swiftlint:disable:this 
     guard let internalUtility = Self.internalUtility else { return false }
 
     let shouldUseNativeDialog = shareDialogConfiguration.shouldUseNativeDialog(
-      forDialogName: FBSDKDialogConfigurationNameMessage
+      forDialogName: DialogConfigurationName.message
     )
     return shouldUseNativeDialog && internalUtility.isMessengerAppInstalled
   }
@@ -336,7 +336,7 @@ public class MessageDialog: NSObject, SharingDialog { // swiftlint:disable:this 
 
 extension MessageDialog: DependentAsType {
   struct TypeDependencies {
-    var accessTokenWallet: AccessTokenProviding.Type
+    var accessTokenWallet: _AccessTokenProviding.Type
     var bridgeAPIRequestFactory: BridgeAPIRequestCreating
     var bridgeAPIRequestOpener: BridgeAPIRequestOpening
     var errorFactory: ErrorCreating
@@ -348,7 +348,7 @@ extension MessageDialog: DependentAsType {
   static var defaultDependencies: TypeDependencies? = TypeDependencies(
     accessTokenWallet: AccessToken.self,
     bridgeAPIRequestFactory: ShareBridgeAPIRequestFactory(),
-    bridgeAPIRequestOpener: BridgeAPI.shared,
+    bridgeAPIRequestOpener: _BridgeAPI.shared,
     errorFactory: ErrorFactory(),
     eventLogger: AppEvents.shared,
     internalUtility: InternalUtility.shared,

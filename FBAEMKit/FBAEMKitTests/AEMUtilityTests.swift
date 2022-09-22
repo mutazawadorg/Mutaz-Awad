@@ -10,8 +10,6 @@ import FBAEMKit
 import Foundation
 import XCTest
 
-#if !os(tvOS)
-
 final class AEMUtilityTests: XCTestCase {
   enum Keys {
     static let content = "fb_content"
@@ -26,6 +24,16 @@ final class AEMUtilityTests: XCTestCase {
     XCTAssertNil(
       _AEMUtility.shared.getMatchedInvocation(invocations, businessID: "123"),
       "Should not expect to get the matched invocation without matched business ID"
+    )
+  }
+
+  func testGetMatchedInvocationWithNullBusinessID() {
+    let invocation = SampleAEMInvocations.createGeneralInvocation1()
+    let invocations = [invocation, SampleAEMInvocations.createInvocationWithBusinessID()]
+    XCTAssertEqual(
+      invocation,
+      _AEMUtility.shared.getMatchedInvocation(invocations, businessID: nil),
+      "Should expect to get the matched invocation without businessID"
     )
   }
 
@@ -180,5 +188,3 @@ final class AEMUtilityTests: XCTestCase {
     return String(data: jsonData!, encoding: String.Encoding.ascii)! // swiftlint:disable:this force_unwrapping
   }
 }
-
-#endif

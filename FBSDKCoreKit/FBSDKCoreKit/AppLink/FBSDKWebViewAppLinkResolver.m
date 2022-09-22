@@ -14,13 +14,13 @@
 #import <WebKit/WebKit.h>
 
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKCoreKit/FBSDKCoreKit-Swift.h>
 #import <FBSDKCoreKit_Basics/FBSDKCoreKit_Basics.h>
 
 #import "FBSDKAppLink.h"
 #import "FBSDKErrorFactory+Internal.h"
 #import "FBSDKErrorReporter.h"
 #import "FBSDKWebViewAppLinkResolverWebViewDelegate.h"
-#import "NSURLSession+Protocols.h"
 
 /**
  Describes the callback for appLinkFromURLInBackground.
@@ -62,7 +62,7 @@ static NSString *const FBSDKWebViewAppLinkResolverShouldFallbackKey = @"should_f
 
 @interface FBSDKWebViewAppLinkResolver ()
 
-@property (nonatomic, strong) id<FBSDKSessionProviding> sessionProvider;
+@property (nonatomic, strong) id<FBSDKURLSessionProviding> sessionProvider;
 @property (nonatomic, strong) id<FBSDKErrorCreating> errorFactory;
 
 @end
@@ -76,7 +76,7 @@ static NSString *const FBSDKWebViewAppLinkResolverShouldFallbackKey = @"should_f
                           errorFactory:factory];
 }
 
-- (instancetype)initWithSessionProvider:(id<FBSDKSessionProviding>)sessionProvider
+- (instancetype)initWithSessionProvider:(id<FBSDKURLSessionProviding>)sessionProvider
                            errorFactory:(id<FBSDKErrorCreating>)errorFactory
 {
   if ((self = [super init])) {
@@ -132,10 +132,11 @@ static NSString *const FBSDKWebViewAppLinkResolverShouldFallbackKey = @"should_f
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
   [request setValue:FBSDKWebViewAppLinkResolverMetaTagPrefix forHTTPHeaderField:FBSDKWebViewAppLinkResolverPreferHeader];
 
-  id<FBSDKSessionDataTask> task = [self.sessionProvider dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+  id<FBSDKNetworkTask> task = [self.sessionProvider fb_dataTaskWithRequest:request
+                                                         completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
     completion(response, data, error);
   }];
-  [task resume];
+  [task fb_resume];
 }
 
 - (void)appLinkFromURL:(NSURL *)url handler:(FBSDKAppLinkBlock)handler
@@ -273,9 +274,7 @@ static NSString *const FBSDKWebViewAppLinkResolverShouldFallbackKey = @"should_f
         NSURL *url = urlString ? [NSURL URLWithString:urlString] : nil;
         NSString *appStoreId = [FBSDKTypeUtility array:appStoreIds objectAtIndex:i][FBSDKWebViewAppLinkResolverDictionaryValueKey];
         NSString *appName = [FBSDKTypeUtility array:appNames objectAtIndex:i][FBSDKWebViewAppLinkResolverDictionaryValueKey];
-        FBSDKAppLinkTarget *target = [FBSDKAppLinkTarget appLinkTargetWithURL:url
-                                                                   appStoreId:appStoreId
-                                                                      appName:appName];
+        FBSDKAppLinkTarget *target = [[FBSDKAppLinkTarget alloc] initWithURL:url appStoreId:appStoreId appName:appName];
         [FBSDKTypeUtility array:linkTargets addObject:target];
       }
     }

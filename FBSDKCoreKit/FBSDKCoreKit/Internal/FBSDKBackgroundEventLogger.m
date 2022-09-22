@@ -8,8 +8,7 @@
 
 #if !TARGET_OS_TV
 
-#import "FBSDKBackgroundEventLogger.h"
-
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKCoreKit_Basics/FBSDKCoreKit_Basics.h>
 
 #import "FBSDKEventLogging.h"
@@ -55,7 +54,7 @@
 
 - (BOOL)_isNewBackgroundRefresh
 {
-  if ([_infoDictionaryProvider objectForInfoDictionaryKey:@"BGTaskSchedulerPermittedIdentifiers"]) {
+  if ([_infoDictionaryProvider fb_objectForInfoDictionaryKey:@"BGTaskSchedulerPermittedIdentifiers"]) {
     return YES;
   }
   return NO;
